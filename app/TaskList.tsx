@@ -7,8 +7,7 @@ import {
   createTaskAction,
   updateTaskAction,
 } from "@/app/actions/tasks";
-
-type Task = {
+export type Task = {
   id: number;
   title: string;
   description: string;
@@ -17,7 +16,7 @@ type Task = {
   status: string;
 };
 
-type Props = {
+export type Props = {
   initialTasks: Task[];
   initialSort: string;
 };
@@ -135,7 +134,8 @@ export default function TaskList({
       title,
       description,
       dueDate,
-      topic
+      topic,
+      status  
     );
 
     const newTask: Task = {
@@ -476,48 +476,4 @@ export default function TaskList({
     </main>
   );
 }
-```
 
-### One correction to the Server Action
-
-Because your functions are named **`createTask`** and **`updateTask`** (singular), your action file should use those exact names:
-
-```tsx id="ehm2dv"
-"use server";
-
-import {
-  createTask,
-  updateTask,
-} from "@/lib/tasks";
-
-export async function createTaskAction(
-  title: string,
-  description: string,
-  dueDate: string,
-  topic: string
-) {
-  return createTask(
-    title,
-    description,
-    dueDate,
-    topic
-  );
-}
-
-export async function updateTaskAction(
-  id: number,
-  title: string,
-  description: string,
-  dueDate: string,
-  topic: string,
-  status: string
-) {
-  return updateTask(
-    id,
-    title,
-    description,
-    dueDate,
-    topic,
-    status
-  );
-}

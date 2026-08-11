@@ -9,13 +9,15 @@ export async function createTaskAction(
   title: string,
   description: string,
   dueDate: string,
-  topic: string
+  topic: string,
+  status: string
 ) {
   return createTask(
     title,
     description,
     dueDate,
-    topic
+    topic,
+    status
   );
 }
 

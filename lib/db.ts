@@ -13,7 +13,7 @@ db.exec(`
             title TEXT NOT NULL,
             description TEXT,
             dueDate TEXT,
-            topic TEXT
+            topic TEXT,
             status TEXT
         )
     `);
