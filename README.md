@@ -12,8 +12,12 @@ yarn dev
 pnpm dev
 # or
 bun dev
-```
 
+#running tests: 
+
+npm install -D vitest
+npm test
+```
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
@@ -71,7 +75,7 @@ A simple To-Do web application built with **Next.js**, **React**, **TypeScript**
 * SQLite
 * Tailwind CSS
 * better-sqlite3
-
+* Vitetest
 
 
 ### Database
@@ -110,6 +114,7 @@ npm install
 ```bash
 npm run dev
 ```
+running tests:
 
 ### 3. Open the application
 
@@ -145,3 +150,4 @@ After making changes, click **Save** to update the task in the database.
 
 Use the **Sort by** dropdown to change the order in which tasks are displayed.
 
+All AI usage:https://chatgpt.com/share/6a7c44d4-e15c-83ea-8e86-7e6180d0b9d0
