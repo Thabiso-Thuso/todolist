@@ -1,29 +1,39 @@
+
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  Archive,
+  ArchiveRestore,
+  Pencil,
+} from "lucide-react";
 
 import {
   createTaskAction,
   updateTaskAction,
 } from "@/app/actions/tasks";
-export type Task = {
+
+export type Task = {  
   id: number;
   title: string;
   description: string;
   dueDate: string;
   topic: string;
   status: string;
+  archived: number;
 };
 
-export type Props = {
+type Props = {
   initialTasks: Task[];
   initialSort: string;
+  initialView: string;
 };
 
 export default function TaskList({
   initialTasks,
   initialSort,
+  initialView,
 }: Props) {
   const router = useRouter();
 
@@ -32,6 +42,9 @@ export default function TaskList({
 
   const [sort, setSort] =
     useState(initialSort);
+
+  const [view, setView] =
+    useState(initialView);
 
   const [editingId, setEditingId] =
     useState<number | null>(null);
@@ -48,7 +61,23 @@ export default function TaskList({
   ) => {
     setSort(value);
 
-    router.push(`?sort=${value}`);
+    router.push(
+      `?sort=${value}&view=${view}`
+    );
+  };
+
+  // -----------------------------
+  // ACTIVE / ARCHIVED VIEW
+  // -----------------------------
+
+  const handleViewChange = (
+    value: string
+  ) => {
+    setView(value);
+
+    router.push(
+      `?sort=${sort}&view=${value}`
+    );
   };
 
   // -----------------------------
@@ -57,10 +86,7 @@ export default function TaskList({
 
   const handleEdit = (task: Task) => {
     setEditingId(task.id);
-
-    setEditedTask({
-      ...task,
-    });
+    setEditedTask({ ...task });
   };
 
   // -----------------------------
@@ -73,7 +99,7 @@ export default function TaskList({
   };
 
   // -----------------------------
-  // CHANGE FIELD
+  // FIELD CHANGE
   // -----------------------------
 
   const handleFieldChange = (
@@ -89,7 +115,7 @@ export default function TaskList({
   };
 
   // -----------------------------
-  // SAVE
+  // SAVE EDIT
   // -----------------------------
 
   const handleSave = async () => {
@@ -101,19 +127,43 @@ export default function TaskList({
       editedTask.description,
       editedTask.dueDate,
       editedTask.topic,
-      editedTask.status
-    );
-
-    setTasks((currentTasks) =>
-      currentTasks.map((task) =>
-        task.id === editedTask.id
-          ? editedTask
-          : task
-      )
+      editedTask.status,
+      editedTask.archived
     );
 
     setEditingId(null);
     setEditedTask(null);
+
+    router.refresh();
+  };
+
+  // -----------------------------
+  // ARCHIVE / RESTORE
+  // -----------------------------
+
+  const handleArchive = async (
+    task: Task
+  ) => {
+    const newArchivedValue =
+      task.archived === 1 ? 0 : 1;
+
+    await updateTaskAction(
+      task.id,
+      task.title,
+      task.description,
+      task.dueDate,
+      task.topic,
+      task.status,
+      newArchivedValue
+    );
+
+    // Remove the task from the current view
+    setTasks((currentTasks) =>
+      currentTasks.filter(
+        (currentTask) =>
+          currentTask.id !== task.id
+      )
+    );
 
     router.refresh();
   };
@@ -135,7 +185,8 @@ export default function TaskList({
       description,
       dueDate,
       topic,
-      status  
+      "Todo",
+      0
     );
 
     const newTask: Task = {
@@ -145,6 +196,7 @@ export default function TaskList({
       dueDate,
       topic,
       status: "Todo",
+      archived: 0,
     };
 
     setTasks((currentTasks) => [
@@ -169,40 +221,69 @@ export default function TaskList({
             To Do
           </h1>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
 
-            <span className="font-medium text-gray-600">
-              Sort by:
-            </span>
+            {/* ACTIVE / ARCHIVED */}
 
-            <select
-              value={sort}
-              onChange={(e) =>
-                handleSortChange(
-                  e.target.value
-                )
-              }
-              className="rounded-lg border border-gray-300 bg-white px-4 py-2"
-            >
-              <option value="dueDate">
-                Due Date
-              </option>
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-600">
+                View:
+              </span>
 
-              <option value="status">
-                Status
-              </option>
+              <select
+                value={view}
+                onChange={(e) =>
+                  handleViewChange(
+                    e.target.value
+                  )
+                }
+                className="rounded-lg border border-gray-300 bg-white px-4 py-2"
+              >
+                <option value="active">
+                  Active
+                </option>
 
-              <option value="title">
-                Title
-              </option>
+                <option value="archived">
+                  Archived
+                </option>
+              </select>
+            </div>
 
-              <option value="topic">
-                Topic
-              </option>
-            </select>
+            {/* SORT */}
+
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-600">
+                Sort by:
+              </span>
+
+              <select
+                value={sort}
+                onChange={(e) =>
+                  handleSortChange(
+                    e.target.value
+                  )
+                }
+                className="rounded-lg border border-gray-300 bg-white px-4 py-2"
+              >
+                <option value="dueDate">
+                  Due Date
+                </option>
+
+                <option value="status">
+                  Status
+                </option>
+
+                <option value="title">
+                  Title
+                </option>
+
+                <option value="topic">
+                  Topic
+                </option>
+              </select>
+            </div>
 
           </div>
-
         </div>
 
         {/* TASKS */}
@@ -210,28 +291,32 @@ export default function TaskList({
         <div className="space-y-4">
 
           {tasks.map((task) => {
-
             const isEditing =
               editingId === task.id;
+              const isOverdue =
+    task.archived === 0 &&
+    task.status !== "Complete" &&
+    new Date(task.dueDate) < new Date();
+
 
             return (
               <div
                 key={task.id}
-                className="rounded-xl bg-white p-6 shadow-sm"
+                  className={`rounded-xl p-6 shadow-sm ${
+        isOverdue
+          ? "border border-red-200 bg-red-50"
+          : "bg-white"
+      }`}
               >
 
                 {isEditing && editedTask ? (
 
-                  /* ==========================
-                     EDIT MODE
-                  ========================== */
-
+                  /* EDIT MODE */
+ss
                   <div className="space-y-5">
 
-                    {/* TITLE */}
-
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">
+                      <label className="mb-1 block text-sm font-medium">
                         Title
                       </label>
 
@@ -244,14 +329,12 @@ export default function TaskList({
                             e.target.value
                           )
                         }
-                        className="w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-blue-500"
+                        className="w-full rounded-lg border border-gray-300 px-4 py-2"
                       />
                     </div>
 
-                    {/* DESCRIPTION */}
-
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">
+                      <label className="mb-1 block text-sm font-medium">
                         Description
                       </label>
 
@@ -266,14 +349,12 @@ export default function TaskList({
                           )
                         }
                         rows={3}
-                        className="w-full resize-none rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-blue-500"
+                        className="w-full rounded-lg border border-gray-300 px-4 py-2"
                       />
                     </div>
 
-                    {/* TOPIC */}
-
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">
+                      <label className="mb-1 block text-sm font-medium">
                         Topic
                       </label>
 
@@ -286,57 +367,44 @@ export default function TaskList({
                             e.target.value
                           )
                         }
-                        className="w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-blue-500"
+                        className="w-full rounded-lg border border-gray-300 px-4 py-2"
                       />
                     </div>
 
-                    {/* DATE + STATUS */}
-
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 
-                      {/* DATE */}
-
                       <div>
-
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                        <label className="mb-1 block text-sm font-medium">
                           Due Date
                         </label>
 
                         <input
                           type="date"
-                          value={
-                            editedTask.dueDate
-                          }
+                          value={editedTask.dueDate}
                           onChange={(e) =>
                             handleFieldChange(
                               "dueDate",
                               e.target.value
                             )
                           }
-                          className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 outline-none focus:border-blue-500"
+                          className="w-full rounded-lg border border-gray-300 px-4 py-2"
                         />
-
                       </div>
 
-                      {/* STATUS */}
-
                       <div>
-
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                        <label className="mb-1 block text-sm font-medium">
                           Status
                         </label>
 
                         <select
-                          value={
-                            editedTask.status
-                          }
+                          value={editedTask.status}
                           onChange={(e) =>
                             handleFieldChange(
                               "status",
                               e.target.value
                             )
                           }
-                          className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 outline-none focus:border-blue-500"
+                          className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2"
                         >
                           <option value="Todo">
                             Todo
@@ -350,25 +418,22 @@ export default function TaskList({
                             Complete
                           </option>
                         </select>
-
                       </div>
 
                     </div>
 
-                    {/* BUTTONS */}
-
-                    <div className="flex justify-end gap-3 pt-2">
+                    <div className="flex justify-end gap-3">
 
                       <button
                         onClick={handleCancel}
-                        className="rounded-lg border border-gray-300 px-5 py-2 font-medium text-gray-700 hover:bg-gray-100"
+                        className="rounded-lg border border-gray-300 px-5 py-2"
                       >
                         Cancel
                       </button>
 
                       <button
                         onClick={handleSave}
-                        className="rounded-lg bg-blue-600 px-5 py-2 font-medium text-white hover:bg-blue-700"
+                        className="rounded-lg bg-blue-600 px-5 py-2 text-white"
                       >
                         Save
                       </button>
@@ -379,21 +444,15 @@ export default function TaskList({
 
                 ) : (
 
-                  /* ==========================
-                     NORMAL MODE
-                  ========================== */
+                  /* NORMAL MODE */
 
                   <div className="flex items-start justify-between gap-4">
 
                     <div className="flex-1">
 
-                      {/* TITLE */}
-
                       <h2 className="text-xl font-semibold text-gray-900">
                         {task.title}
                       </h2>
-
-                      {/* DESCRIPTION */}
 
                       {task.description && (
                         <p className="mt-1 text-gray-600">
@@ -401,37 +460,19 @@ export default function TaskList({
                         </p>
                       )}
 
-                      {/* DETAILS */}
-
                       <div className="mt-4 flex flex-wrap items-center gap-3">
 
-                        {/* TOPIC */}
-
                         {task.topic && (
-                          <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-600">
+                          <span className="rounded-full bg-gray-100 px-3 py-1 text-sm">
                             {task.topic}
                           </span>
                         )}
-
-                        {/* DATE */}
 
                         <span className="text-sm text-gray-500">
                           Due: {task.dueDate}
                         </span>
 
-                        {/* STATUS */}
-
-                        <span
-                          className={`rounded-full px-3 py-1 text-sm font-medium ${
-                            task.status ===
-                            "Complete"
-                              ? "bg-green-100 text-green-700"
-                              : task.status ===
-                                "In Progress"
-                              ? "bg-blue-100 text-blue-700"
-                              : "bg-yellow-100 text-yellow-700"
-                          }`}
-                        >
+                        <span className="rounded-full bg-gray-100 px-3 py-1 text-sm">
                           {task.status}
                         </span>
 
@@ -439,20 +480,47 @@ export default function TaskList({
 
                     </div>
 
-                    {/* EDIT BUTTON */}
+                    {/* ACTIONS */}
 
-                    <button
-                      onClick={() =>
-                        handleEdit(task)
-                      }
-                      className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
-                      aria-label={`Edit ${task.title}`}
-                    >
-                      ✎
-                    </button>
+                    <div className="flex items-center gap-1">
+
+                      {/* EDIT */}
+
+                      <button
+                        onClick={() =>
+                          handleEdit(task)
+                        }
+                        className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                        aria-label="Edit task"
+                      >
+                        <Pencil size={18} />
+                      </button>
+
+                      {/* ARCHIVE / RESTORE */}
+
+                      <button
+                        onClick={() =>
+                          handleArchive(task)
+                        }
+                        className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                        aria-label={
+                          task.archived === 1
+                            ? "Restore task"
+                            : "Archive task"
+                        }
+                      >
+                        {task.archived === 1 ? (
+                          <ArchiveRestore
+                            size={18}
+                          />
+                        ) : (
+                          <Archive size={18} />
+                        )}
+                      </button>
+
+                    </div>
 
                   </div>
-
                 )}
 
               </div>
@@ -463,17 +531,18 @@ export default function TaskList({
 
       </div>
 
-      {/* FLOATING ADD BUTTON */}
+      {/* ADD TASK */}
 
-      <button
-        onClick={handleAddTask}
-        className="fixed bottom-8 right-8 flex h-16 w-16 items-center justify-center rounded-full bg-blue-600 text-3xl text-white shadow-lg transition hover:scale-105 hover:bg-blue-700"
-        aria-label="Add task"
-      >
-        +
-      </button>
+      {view === "active" && (
+        <button
+          onClick={handleAddTask}
+          className="fixed bottom-8 right-8 flex h-16 w-16 items-center justify-center rounded-full bg-blue-600 text-3xl text-white shadow-lg hover:bg-blue-700"
+          aria-label="Add task"
+        >
+          +
+        </button>
+      )}
 
     </main>
   );
 }
-

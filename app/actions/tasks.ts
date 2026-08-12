@@ -10,14 +10,16 @@ export async function createTaskAction(
   description: string,
   dueDate: string,
   topic: string,
-  status: string
+  status: string,
+  archived:number
 ) {
   return createTask(
     title,
     description,
     dueDate,
     topic,
-    status
+    status,
+    archived
   );
 }
 
@@ -27,7 +29,7 @@ export async function updateTaskAction(
   description: string,
   dueDate: string,
   topic: string,
-  status: string
+  status: string,archived:number
 ) {
   return updateTask(
     id,
@@ -35,6 +37,6 @@ export async function updateTaskAction(
     description,
     dueDate,
     topic,
-    status
+    status,archived
   );
 }

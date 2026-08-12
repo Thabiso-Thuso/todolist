@@ -12,7 +12,7 @@ export default async function Page({
   const sort = params.sort || "dueDate";
 
   // Get tasks from SQLite using your existing query
-  const tasks = getTasks(sort);
+  const tasks = getTasks(sort, 0);
 
   return (
     <TaskList
