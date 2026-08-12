@@ -17,6 +17,10 @@ bun dev
 
 npm install -D vitest
 npm test
+
+#install sqlite
+npm install better-sqlite3
+npm install -D @types/better-sqlite3
 ```
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
